@@ -1,0 +1,22 @@
+name: Build Garmin IQ
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rozbaleni a kompilace
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip wget openjdk-17-jdk libwebkit2gtk-4.0-37
+          unzip -o app_bundle.zip
+          openssl genrsa -out key.pem 4096
+          openssl pkcs8 -topk8 -inform PEM -outform DER -in key.pem -out developer_key.der -nocrypt
+          # Stazeni oficialniho Garmin Connect IQ SDK
+          wget -q https://developer.garmin.com/downloads/connect-iq/sdks/connectiq-sdk-lin-7.4.3-2024-12-11-90ec25e45.zip -O sdk.zip
+          unzip -q sdk.zip -d sdk
+          # Stazeni definic zarizeni a kompilace do .iq
+          ./sdk/bin/monkeyc -e -o GymTracker.iq -f monkey.jungle -y developer_key.der -w
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hotovy-IQ-Soubor
+          path: GymTracker.iq
